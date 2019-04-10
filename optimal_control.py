@@ -19,7 +19,8 @@ def solve_optimal_control_problem(Lagrangian, endpoint_cost, initial_time, termi
                                   control_upper_bound=None, calc_error_arg=1e-4, calc_error_func=1e-4,
                                   calc_error_grad=1e-4, iter_lim=1000, mode='projection', interpolation_kind='cubic',
                                   integral_error=1.49e-08, ode_error=1e-4, default_step=0.01,
-                                  result_keys=('control', 'state', 'costate', 'gradient', 'functional')):
+                                  result_keys=('control', 'state', 'costate', 'gradient', 'functional'),
+                                  print_iter=False):
 
     if mode != 'projection' and mode != 'conditional':
         raise ValueError('Invalid key for "mode"!')
@@ -55,14 +56,33 @@ def solve_optimal_control_problem(Lagrangian, endpoint_cost, initial_time, termi
 
     for i in iterations:
 
-        control_next_interpolated = interp(time_grid, control_next, kind=interpolation_kind)
+        if print_iter:
+            print('\n\nIndex of iteration %i' % (i+1))
+            print('Interpolation of control')
+
+        control_next_interpolated = interp(time_grid, control_next, kind=interpolation_kind, bounds_error=False,
+                                           fill_value='extrapolate')
+
+        if print_iter:
+            print('Finding solution of the state equation')
 
         time_for_state_next, state_next = \
             rk4.solve_ode(initial_time, initial_state, initial_time, terminal_time,
-                          lambda t, x: right_side_of_state_equation(x, control_next_interpolated(t), t), ode_error)
-        state_next_interpolated = interp(time_for_state_next, state_next, kind=interpolation_kind) \
-            if time_for_state_next.size > 2 else interp(time_for_state_next, state_next)
+                          lambda t, x: right_side_of_state_equation(x, control_next_interpolated(t), t), ode_error,
+                          print_iter=print_iter)
+
+        if print_iter:
+            print('Interpolation of the state')
+
+        state_next_interpolated = \
+            interp(time_for_state_next, state_next, kind=interpolation_kind, bounds_error=False,
+                   fill_value='extrapolate') \
+            if time_for_state_next.size > 3 else interp(time_for_state_next, state_next, bounds_error=False,
+                                                        fill_value='extrapolate')
         state_results.append(state_next_interpolated(time_grid))
+
+        if print_iter:
+            print('Finding solution of the costate equation')
 
         time_for_costate_next, costate_next = \
             rk4.solve_ode(terminal_time, -deriv_endpoint_cost_state(state_next_interpolated(terminal_time)),
@@ -76,10 +96,20 @@ def solve_optimal_control_problem(Lagrangian, endpoint_cost, initial_time, termi
                               control_next_interpolated(t),
                               t
                           )),
-                          ode_error)
-        costate_next_interpolated = interp(time_for_costate_next, costate_next, kind=interpolation_kind) \
-            if time_for_costate_next.size > 2 else interp(time_for_costate_next, costate_next)
+                          ode_error, print_iter=print_iter)
+
+        if print_iter:
+            print('Interpolation of the costate')
+
+        costate_next_interpolated = \
+            interp(time_for_costate_next, costate_next, kind=interpolation_kind, bounds_error=False,
+                   fill_value='extrapolate') \
+            if time_for_costate_next.size > 3 else interp(time_for_costate_next, costate_next, bounds_error=False,
+                                                          fill_value='extrapolate')
         costate_results.append(costate_next_interpolated(time_grid))
+
+        if print_iter:
+            print('Gradient\'s calculation')
 
         grad_pool = pool(np.minimum(time_grid.size, cpu_count()))
         grad_current = grad_next.copy()
@@ -93,6 +123,9 @@ def solve_optimal_control_problem(Lagrangian, endpoint_cost, initial_time, termi
         grad_pool.close()
         grad_pool.join()
         grads_results.append(grad_next)
+
+        if print_iter:
+            print('Functional\'s calculation')
 
         functional_current = functional_next
         functional_next = target_functional(state_next_interpolated, control_next_interpolated, initial_time,
@@ -109,6 +142,9 @@ def solve_optimal_control_problem(Lagrangian, endpoint_cost, initial_time, termi
             if i == 0 \
             else np.abs(np.dot((control_next - control_current).ravel(), (grad_next - grad_current).ravel())) / \
                  np.linalg.norm(grad_next - grad_current) ** 2
+
+        if print_iter:
+            print('Finding next value of control')
 
         if is_projection:
             control_next_intermediate = control_next - step * grad_next

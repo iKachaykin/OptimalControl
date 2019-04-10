@@ -54,7 +54,7 @@ if __name__ == '__main__':
     initial_time, terminal_time = 0.0, 2.0
     initial_state = np.array([1.0])
     t = np.linspace(initial_time, terminal_time, grid_dot_num)
-    initial_control = np.zeros((1, grid_dot_num)) + 1.5
+    initial_control = np.zeros((control_dim, grid_dot_num)) + 1.5
     default_step = 0.01
     mode = 'conditional'
     figsize = (15.0, 7.5)
