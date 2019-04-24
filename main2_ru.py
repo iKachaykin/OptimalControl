@@ -38,7 +38,7 @@ def momenta_and_coordinates_to_vector(momenta, coordinates):
 def Lagrangian(x, m, t, t_given, x_given, interpolation_kind):
     x_given_interpolated = interp(t_given, x_given, kind=interpolation_kind) \
             if t_given.size > 2 else interp(t_given, x_given)
-    return np.linalg.norm(x - x_given_interpolated(t).reshape(x_given_interpolated(t).size, -1)) ** 2
+    return np.linalg.norm(x - x_given_interpolated(t)) ** 2
 
 
 def endpoint_cost(x):
@@ -217,8 +217,7 @@ if __name__ == '__main__':
     default_step = 0.01
     mode = 'projection'
     figsize = (15.0, 7.5)
-    fignum = 4
-    line_styles = ('k-',)
+    line_styles = tuple('k-' for i in range(np.maximum(control_dim, state_dim)))
     figtitles = 'Оптимальное управление', 'Оптимальная фазовая траектория',\
                 'Оптимальные сопряженные переменные', 'Значения целевого функционала'
     result_keys = ('control', 'state', 'costate', 'gradient', 'functional')
@@ -242,7 +241,7 @@ if __name__ == '__main__':
     initial_state = momenta_and_coordinates_to_vector(momenta_initial, coordinates_initial)
     t0, T = 0.0, 60.0 * 60
     t = np.linspace(t0, T, grid_dot_num)
-    calc_eps, h_initial = 0.0001, 1.0
+    calc_eps, h_initial = 10.0, 1.0
 
     interpolation_kind = 'cubic'
     print_iter = True
@@ -280,10 +279,17 @@ if __name__ == '__main__':
         plt.figure(figi+1, figsize)
         plt.title(figtitles[figi])
         plt.grid(True)
-        if figi == 0 or figi == 1 or figi == 2:
+        if figi == 0:
             for i in range(control_dim):
                 plt.plot(t, results[result_keys[figi]][-1][i], line_styles[i],
                          label='%s%s(t)' % (var_symbols[figi], '' if control_dim == 1 else str(i)))
+            plt.legend()
+            plt.xlabel('t')
+            plt.ylabel(var_symbols[figi])
+        elif figi == 1 or figi == 2:
+            for i in range(state_dim):
+                plt.plot(t, results[result_keys[figi]][-1][i], line_styles[i],
+                         label='%s%s(t)' % (var_symbols[figi], '' if state_dim == 1 else str(i)))
             plt.legend()
             plt.xlabel('t')
             plt.ylabel(var_symbols[figi])

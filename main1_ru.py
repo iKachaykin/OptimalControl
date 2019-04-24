@@ -59,12 +59,12 @@ if __name__ == '__main__':
     mode = 'conditional'
     figsize = (15.0, 7.5)
     fignum = 4
-    line_styles = ('k-',)
+    line_styles = tuple('k-' for i in range(np.maximum(control_dim, state_dim)))
     figtitles = 'Оптимальное управление', 'Оптимальная фазовая траектория',\
                 'Оптимальные сопряженные переменные', 'Значения целевого функционала'
     result_keys = ('control', 'state', 'costate', 'gradient', 'functional')
     iter_num = 0
-    var_synmbols = 'u', 'x', '\u03C8', 'J'
+    var_symbols = 'u', 'x', '\u03C8', 'J'
 
     results = oc.solve_optimal_control_problem(Lagrangian, endpoint_cost, initial_time, terminal_time,
                                                right_side_of_state_equation, initial_state, initial_control,
@@ -90,18 +90,25 @@ if __name__ == '__main__':
         plt.figure(figi+1, figsize)
         plt.title(figtitles[figi])
         plt.grid(True)
-        if figi == 0 or figi == 1 or figi == 2:
+        if figi == 0:
             for i in range(control_dim):
                 plt.plot(t, results[result_keys[figi]][-1][i], line_styles[i],
-                         label='%s%s(t)' % (var_synmbols[figi], '' if control_dim == 1 else str(i)))
+                         label='%s%s(t)' % (var_symbols[figi], '' if control_dim == 1 else str(i)))
             plt.legend()
             plt.xlabel('t')
-            plt.ylabel(var_synmbols[figi])
+            plt.ylabel(var_symbols[figi])
+        elif figi == 1 or figi == 2:
+            for i in range(state_dim):
+                plt.plot(t, results[result_keys[figi]][-1][i], line_styles[i],
+                         label='%s%s(t)' % (var_symbols[figi], '' if state_dim == 1 else str(i)))
+            plt.legend()
+            plt.xlabel('t')
+            plt.ylabel(var_symbols[figi])
         elif figi == 3:
             plt.plot(np.arange(results[result_keys[figi+1]].size), results[result_keys[figi+1]], line_styles[0],
-                     label='%s(u)' % (var_synmbols[figi]))
+                     label='%s(u)' % (var_symbols[figi]))
             plt.xlabel('k, индекс итерации')
-            plt.ylabel(var_synmbols[figi])
+            plt.ylabel(var_symbols[figi])
 
     plt.show()
     plt.close()

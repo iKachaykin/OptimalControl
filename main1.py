@@ -59,7 +59,7 @@ if __name__ == '__main__':
     mode = 'conditional'
     figsize = (15.0, 7.5)
     fignum = 4
-    line_styles = ('k-',)
+    line_styles = tuple('k-' for i in range(np.maximum(control_dim, state_dim)))
     figtitles = 'Optimal control', 'Optimal state', 'Optimal costate', 'Value of target functional'
     result_keys = ('control', 'state', 'costate', 'gradient', 'functional')
     iter_num = 0
@@ -89,10 +89,17 @@ if __name__ == '__main__':
         plt.figure(figi+1, figsize)
         plt.title(figtitles[figi])
         plt.grid(True)
-        if figi == 0 or figi == 1 or figi == 2:
+        if figi == 0:
             for i in range(control_dim):
                 plt.plot(t, results[result_keys[figi]][-1][i], line_styles[i],
                          label='%s%s(t)' % (var_synmbols[figi], '' if control_dim == 1 else str(i)))
+            plt.legend()
+            plt.xlabel('t')
+            plt.ylabel(var_synmbols[figi])
+        elif figi == 1 or figi == 2:
+            for i in range(state_dim):
+                plt.plot(t, results[result_keys[figi]][-1][i], line_styles[i],
+                         label='%s%s(t)' % (var_synmbols[figi], '' if state_dim == 1 else str(i)))
             plt.legend()
             plt.xlabel('t')
             plt.ylabel(var_synmbols[figi])

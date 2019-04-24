@@ -4,69 +4,62 @@ import matplotlib.pyplot as plt
 
 
 def Lagrangian(x, u, t):
-    return np.linalg.norm(x) ** 2 + np.linalg.norm(u) ** 2
+    return np.log(x[0]) / np.log(10) + 3 * u[0]
 
 
 def endpoint_cost(x):
-    return np.linalg.norm(x) ** 2
+    return 0.0
 
 
-def right_side_of_state_equation(x, u, t, A, B):
-    return np.dot(A, x) + np.dot(B, u)
+def right_side_of_state_equation(x, u, t):
+    return 1.5 * x[0] + t ** 2 * u[0] - 1.0
 
 
 def deriv_Lagrangian_state(x, u, t):
-    return 2.0 * x
+    return np.array([1 / x[0] / np.log(10)])
 
 
 def deriv_Lagrangian_control(x, u, t):
-    return 2.0 * u
+    return np.array([3.0])
 
 
 def deriv_endpoint_cost_state(x):
-    return 2.0 * x
+    return np.array([0.0])
 
 
-def deriv_right_side_of_state_equation_state(x, u, t, A):
-    return A
+def deriv_right_side_of_state_equation_state(x, u, t):
+    return np.array([
+        [1.5]
+    ])
 
 
-def deriv_right_side_of_state_equation_control(x, u, t, B):
-    return B
+def deriv_right_side_of_state_equation_control(x, u, t):
+    return np.array([
+        [t ** 2]
+    ])
 
 
-def control_lower_bound(t, control_dim):
-    return -1.0 * np.ones(control_dim)
+def control_lower_bound(t):
+    return np.array([1.0])
 
 
-def control_upper_bound(t, control_dim):
-    return 1.0 * np.ones(control_dim)
+def control_upper_bound(t):
+    return np.array([2.0])
 
 
 if __name__ == '__main__':
 
-    grid_dot_num = 1001
-    control_dim, state_dim = 3, 2
-    rand_low, rand_high = 0, 10
-    initial_time, terminal_time = 0.0, 2.0
-    initial_state = np.zeros(state_dim)
+    grid_dot_num = 101
+    control_dim, state_dim = 1, 1
+    initial_time, terminal_time = 1.0, 2.5
+    initial_state = np.array([1.0])
     t = np.linspace(initial_time, terminal_time, grid_dot_num)
-
-    A = np.ones((state_dim, state_dim))
-    B = np.ones((state_dim, control_dim))
-
-    # A = np.random.randint(rand_low, rand_high, (state_dim, state_dim))
-    # B = np.random.randint(rand_low, rand_high, (state_dim, control_dim))
-
-    # initial_control = np.ones((control_dim, grid_dot_num)) * 0.05
-    initial_control = np.array([np.sin(t), np.cos(t), np.sin(2*t)])
-
+    initial_control = 0.5 * np.cos(t).reshape(control_dim, grid_dot_num) + 1.5
     default_step = 0.01
-    mode = 'projection'
+    mode = 'conditional'
     figsize = (15.0, 7.5)
     fignum = 4
-    # line_styles = tuple('k-' for i in range(np.maximum(control_dim, state_dim)))
-    line_styles = ('k-', 'b-', 'r-')
+    line_styles = tuple('k-' for i in range(np.maximum(control_dim, state_dim)))
     figtitles = 'Оптимальное управление', 'Оптимальная фазовая траектория',\
                 'Оптимальные сопряженные переменные', 'Значения целевого функционала'
     result_keys = ('control', 'state', 'costate', 'gradient', 'functional')
@@ -74,18 +67,15 @@ if __name__ == '__main__':
     var_symbols = 'u', 'x', '\u03C8', 'J'
 
     results = oc.solve_optimal_control_problem(Lagrangian, endpoint_cost, initial_time, terminal_time,
-                                               lambda x, u, t: right_side_of_state_equation(x, u, t, A, B),
-                                               initial_state, initial_control,
+                                               right_side_of_state_equation, initial_state, initial_control,
                                                deriv_Lagrangian_state, deriv_Lagrangian_control,
-                                               deriv_endpoint_cost_state,
-                                               lambda x, u, t: deriv_right_side_of_state_equation_state(x, u, t, A),
-                                               lambda x, u, t: deriv_right_side_of_state_equation_control(x, u, t, B),
-                                               calc_error_arg=1e-10, calc_error_func=1e-10,
-                                               calc_error_grad=1e-10,
-                                               control_lower_bound=lambda t: control_lower_bound(t, control_dim),
-                                               control_upper_bound=lambda t: control_upper_bound(t, control_dim),
-                                               ode_error=1e-2, default_step=default_step, mode=mode,
-                                               result_keys=result_keys, print_iter=False)
+                                               deriv_endpoint_cost_state, deriv_right_side_of_state_equation_state,
+                                               deriv_right_side_of_state_equation_control,
+                                               calc_error_arg=1e-2, calc_error_func=1e-2,
+                                               calc_error_grad=1e-2,
+                                               control_lower_bound=control_lower_bound,
+                                               control_upper_bound=control_upper_bound, default_step=default_step,
+                                               mode=mode, result_keys=result_keys)
     for key in results.keys():
         print(key)
         if key == result_keys[4]:
