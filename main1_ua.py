@@ -56,12 +56,12 @@ if __name__ == '__main__':
     t = np.linspace(initial_time, terminal_time, grid_dot_num)
     initial_control = np.zeros((control_dim, grid_dot_num)) + 1.5
     default_step = 0.01
-    mode = 'projection'
+    mode = 'conditional'
     figsize = (15.0, 7.5)
     fignum = 4
     line_styles = tuple('k-' for i in range(np.maximum(control_dim, state_dim)))
-    figtitles = 'Оптимальное управление', 'Оптимальная фазовая траектория',\
-                'Оптимальные сопряженные переменные', 'Значения целевого функционала'
+    figtitles = '', '',\
+                '', ''
     result_keys = ('control', 'state', 'costate', 'gradient', 'functional')
     iter_num = 0
     var_symbols = 'u', 'x', '\u03C8', 'J'
@@ -107,7 +107,7 @@ if __name__ == '__main__':
         elif figi == 3:
             plt.plot(np.arange(results[result_keys[figi+1]].size), results[result_keys[figi+1]], line_styles[0],
                      label='%s(u)' % (var_symbols[figi]))
-            plt.xlabel('k, индекс итерации')
+            plt.xlabel('k, індекс ітерації')
             plt.ylabel(var_symbols[figi])
 
     plt.show()
